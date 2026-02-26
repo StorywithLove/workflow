@@ -30,6 +30,8 @@ jobs:
         pwd
         echo "===== Files ====="
         ls -lh
+        echo "===== Download speed test (curl) ====="
+        curl -L -o /dev/null https://speed.hetzner.de/100MB.bin
     - name: Install dependencies
       run: |
         pip install requests numpy pandas
