@@ -2,7 +2,7 @@
 **项目来源**：https://github.com/HeQinWill/CNEMC   
 **Realtime Update** 是一个自动触发CNEMC(目标为10分钟Himawari SWR)更新的 GitHub Workflow。   
 自带cron 定时触发**不稳定**，目前需搭配云函数定时调用**GitHub REST API 的 [workflow dispatch](https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28#create-a-workflow-dispatch-event) 接口**。   
-目前云函数：[腾讯云函数] (https://cloud.tencent.com/document/product/583/113039)(512M内免费)
+目前云函数：[腾讯云函数](https://cloud.tencent.com/document/product/583/113039)
 
 示例代码：
 
