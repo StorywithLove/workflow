@@ -2,8 +2,8 @@ name: CNEMC_Realtime_Update
 
 on:
   workflow_dispatch:      # 允许手动补跑
-  schedule:
-    - cron: '50 * * * *'  
+  # schedule:
+    # - cron: '50 * * * *'  
 permissions:
   contents: write
 jobs:
