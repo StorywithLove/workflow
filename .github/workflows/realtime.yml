@@ -2,7 +2,7 @@ name: CNEMC Realtime Update
 
 on:
   schedule:
-    - cron: '31 * * * *'  # 每小时的 31 分钟，UTC 时间
+    - cron: '25,31 * * * *'  # 每小时的 31 分钟，UTC 时间
   workflow_dispatch:      # 允许手动补跑
 permissions:
   contents: write
