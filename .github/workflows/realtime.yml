@@ -14,16 +14,16 @@ jobs:
     - name: Inspect runner system
       run: |
         echo "===== OS ====="
-        uname -a
+        # uname -a
         lsb_release -a || cat /etc/os-release
         echo "===== CPU ====="
-        lscpu
+        lscpu | grep "Model name" && lscpu | grep "^CPU(s)"
         echo "===== Memory ====="
         free -h
         echo "===== Disk ====="
         df -h
-        echo "===== Disk details ====="
-        lsblk
+        # echo "===== Disk details ====="
+        # lsblk
         echo "===== Current user ====="
         whoami
         echo "===== Working directory ====="
@@ -31,7 +31,7 @@ jobs:
         echo "===== Files ====="
         ls -lh
         echo "===== Download speed test (curl) ====="
-        curl -L -o /dev/null https://speed.hetzner.de/100MB.bin
+        curl -L -o /dev/null https://github.com/git/git/archive/refs/tags/v2.44.0.tar.gz
     - name: Install dependencies
       run: |
         pip install requests numpy pandas
