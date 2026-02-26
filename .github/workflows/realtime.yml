@@ -1,4 +1,4 @@
-name: CNEMC Realtime Update
+name: CNEMC_Realtime_Update
 
 on:
   workflow_dispatch:      # 允许手动补跑
