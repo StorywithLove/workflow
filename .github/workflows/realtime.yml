@@ -3,7 +3,7 @@ name: CNEMC Realtime Update
 on:
   workflow_dispatch:      # 允许手动补跑
   schedule:
-    - cron: '40 * * * *'  
+    - cron: '50 * * * *'  
 permissions:
   contents: write
 jobs:
@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Show current time
+      run: date
     - name: Inspect runner system
       run: |
         echo "===== OS ====="
