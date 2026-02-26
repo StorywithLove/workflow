@@ -11,6 +11,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Inspect runner system
+      run: |
+        echo "===== OS ====="
+        uname -a
+        lsb_release -a || cat /etc/os-release
+        echo "===== CPU ====="
+        lscpu
+        echo "===== Memory ====="
+        free -h
+        echo "===== Disk ====="
+        df -h
+        echo "===== Disk details ====="
+        lsblk
+        echo "===== Current user ====="
+        whoami
+        echo "===== Working directory ====="
+        pwd
+        echo "===== Files ====="
+        ls -lh
     - name: Install dependencies
       run: |
         pip install requests numpy pandas
