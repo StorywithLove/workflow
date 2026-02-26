@@ -1,1 +1,28 @@
+name: CNEMC Realtime Update
 
+on:
+  schedule:
+    - cron: '31 * * * *'  # 每小时的 31 分钟，UTC 时间
+  workflow_dispatch:      # 允许手动补跑
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: |
+        pip install requests numpy pandas
+    - name: Run Python
+      run: |
+        python cnemc_whole.py
+    - name: Commit changes if any
+      run: |
+        git config --global user.email "BOT@github.com"
+        git config --global user.name "githubBOT"
+        git add .
+        git diff --quiet || git commit -m "update realtime data" -a
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{secrets.GTOKEN}}
