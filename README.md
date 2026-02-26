@@ -1,5 +1,5 @@
 # Realtime Update
-
+**项目来源**：https://github.com/HeQinWill/CNEMC   
 **Realtime Update** 是一个自动触发CNEMC(目标为10分钟Himawari SWR)更新的 GitHub Workflow。由于 GitHub Actions 的 **cron 定时触发不稳定**，通过简单的 Python 脚本，通过 **GitHub REST API 的 [workflow dispatch](https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28#create-a-workflow-dispatch-event) 接口**远程触发 workflow。
 
 示例代码：
