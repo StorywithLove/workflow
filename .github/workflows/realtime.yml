@@ -28,7 +28,7 @@ jobs:
         git remote -v
         git config --get user.name
         git config --get user.email
-    - name: Push with PAT
-      run: |
-        git remote set-url origin https://x-access-token:${{ secrets.GTOKEN }}@github.com/StorywithLove/workflow.git
-        git push origin main
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{secrets.GTOKEN}}
