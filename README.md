@@ -12,7 +12,7 @@
 
 ## 功能概述
 
-**Realtime Update** 是一个基于 **GitHub Actions Workflow** 的自动化更新流程，目前支持 / 规划支持：
+一个基于 **GitHub Actions Workflow** 的自动化更新流程，目前支持 / 规划支持：
 
 - 🌏 **CNEMC 实时环境监测数据更新**
 - 🛰️ **10 分钟级 Himawari 卫星短波辐射（SWR）数据**（规划中）
