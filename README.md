@@ -1,7 +1,21 @@
 # 实时数据爬取与存档
 
-本项目用于 **自动化爬取并存档实时环境数据**，并通过 **GitHub Actions + 外部定时触发机制** 实现稳定、可持续的周期性更新，适用于对 **时效性与连续性要求较高** 的数据采集场景。
+本项目用于 **自动化爬取并存档实时环境数据**，并通过 **GitHub Actions + 外部定时触发机制** 实现稳定、可持续的周期性更新，适用于对 **时效性与连续性要求较高** 的数据采集场景。     
 
+（1）快速加载小时数据   
+```python
+import pandas
+url = "https://raw.githubusercontent.com/StorywithLove/workflow/main/Archive/2026-04-28/2026-04-28T00.csv"
+df = pd.read_csv(url)
+```
+（2）打印当天数据详情
+```python
+import requests
+url = "https://api.github.com/repos/StorywithLove/workflow/contents/Archive/2026-04-28"
+r = requests.get(url, timeout=10)
+files = r.json()
+file_list = [f['name'] for f in files]
+```
 ## 项目背景
 
 **项目来源**  
