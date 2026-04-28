@@ -116,12 +116,13 @@ GitHub Actions 自带的 `cron` 定时触发在实际运行中 **存在延迟或
 import requests
 import json
 
-def run(github_pat, repo_owner, repo_name='workflow', workflow_name='realtime.yml'):
+def run():
     payload = json.dumps({"ref": "main"})
     headers = {
         'Authorization': f'Bearer {github_pat}',
         "Accept": "application/vnd.github.v3+json"
     }
+    workflow_name='realtime.yml'
     url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/actions/workflows/{workflow_name}/dispatches'
     response = requests.post(url, data=payload, headers=headers)
     assert response.status_code == 204, f"Failed to trigger workflow: {response.text}"
