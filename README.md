@@ -12,8 +12,8 @@ df = pd.read_csv(url)
 ```python
 import requests
 url = "https://api.github.com/repos/StorywithLove/workflow/contents/Archive/2026-04-28"
-r = requests.get(url, timeout=10)
-files = r.json()
+resp = requests.get(url, timeout=10)
+files = resp.json()
 file_list = [f['name'] for f in files]
 ```
 ## 项目背景
