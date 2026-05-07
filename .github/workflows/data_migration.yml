@@ -1,57 +1,43 @@
-name: Data_Migration_Archive_to_Structured
+name: migrate_external_archive
 
 on:
-  workflow_dispatch:   # 手动触发（非常重要）
-  # 可以未来加 schedule 做周期整理
+  workflow_dispatch:
+
 permissions:
   contents: write
+
 jobs:
   migrate:
     runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
-    - name: Show environment
-      run: |
-        echo "=== Start Migration ==="
-        ls -lh
-    # =========================
-    # 核心迁移逻辑
-    # =========================
-    - name: Migrate Archive → CNEMC
-      run: |
-        mkdir -p Archive/CNEMC
-        
-        for file in Archive/*/*.csv; do
-          date_folder=$(basename $(dirname "$file"))
-          mkdir -p Archive/CNEMC/$date_folder
-          mv "$file" Archive/CNEMC/$date_folder/
-        done
-    # - name: Migrate Archive → ZJEMC (if needed)
-    #   run: |
-    #     mkdir -p Archive/ZJEMC
-    #     shopt -s nullglob
-    #     # 如果未来你有规则区分，这里可以扩展
-    #     # 当前示例：空逻辑占位
-    #     for file in Archive/ZJEMC_source/*.csv; do
-    #       mv "$file" Archive/ZJEMC/
-    #     done
 
-    # =========================
-    # 提交变更
-    # =========================
-    - name: Commit migration results
+    steps:
+    - name: Checkout current repo
+      uses: actions/checkout@v4
+
+    - name: Clone source repo
+      run: |
+        git clone https://github.com/StorywithLove/ZJEMC.git source_repo
+
+    - name: Create target folder
+      run: |
+        mkdir -p Archive/ZJEMC
+
+    - name: Copy data
+      run: |
+        cp -r source_repo/Archive/* Archive/ZJEMC/ || true
+
+    - name: Commit changes
       run: |
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
 
-        git add Archive/
+        git add Archive/ZJEMC
 
-        git diff --cached --quiet && echo "No migration needed" && exit 0
+        git diff --cached --quiet && echo "No changes" && exit 0
 
-        git commit -m "data migration: restructure Archive → CNEMC/ZJEMC"
+        git commit -m "migrate external Archive → ZJEMC"
 
-    - name: Push changes
+    - name: Push
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GTOKEN }}
