@@ -57,6 +57,6 @@ if __name__ == "__main__":
 
     # 将每小时数据保存为 csv 文件
     timestamp = df['timepoint'].unique()[-1][:13]
-    daily_folder = Path('Archive')/timestamp[:10]
+    daily_folder = Path('Archive')/'CNEMC'/timestamp[:10]
     daily_folder.mkdir(parents=True, exist_ok=True)
     df_.to_csv(daily_folder/(timestamp+'.csv'),index=None, mode='w')
