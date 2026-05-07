@@ -87,7 +87,7 @@ def get_zjemc(web_url, usr, pwd):
         
         # 将每小时数据保存为 csv 文件
         timestamp = dt.strftime(format="%Y-%m-%dT%H")
-        daily_folder = Path('Archive')/timestamp[:10]
+        daily_folder = Path('Archive')/'ZJEMC'/timestamp[:10]
         daily_folder.mkdir(parents=True, exist_ok=True)
         out_df.to_csv(daily_folder/(timestamp+'.csv'), mode='w')
     except Exception as e:
