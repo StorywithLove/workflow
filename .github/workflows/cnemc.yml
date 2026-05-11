@@ -40,6 +40,41 @@ jobs:
     - name: Run Python
       run: |
         python cnemc_whole.py
+
+    - name: Clean historical data (older than 12 months)
+      run: |
+        set -e
+        echo "=== Cleaning historical data older than 12 months ==="
+        
+        # 历史仓库基础 URL
+        HIST_REPO="https://raw.githubusercontent.com/StorywithLove/Historical_Data_Archive/main/Archive"
+        # 计算阈值日期（12 个月前最后一天）
+        THRESHOLD_DATE=$(date -d "$(date +%Y-%m-01) -12 months" +%Y-%m-01)
+        echo "Threshold date: $THRESHOLD_DATE (folders before this may be deleted if exist in hist repo)"
+        
+        for SRC in CNEMC ZJEMC; do
+          echo "--- Processing $SRC ---"
+          SRC_DIR="Archive/$SRC"
+          # 检查源目录是否存在
+          [ -d "$SRC_DIR" ] || continue
+
+          for folder in "$SRC_DIR"/*; do
+            [ -d "$folder" ] || continue
+            DATE_FOLDER=$(basename "$folder")
+            # 判断是否小于阈值日期
+            if [[ "$DATE_FOLDER" < "$THRESHOLD_DATE" ]]; then
+              # 检查历史仓库是否存在对应文件夹
+              HIST_URL="$HIST_REPO/$SRC/$DATE_FOLDER"
+              if curl --head --silent --fail "$HIST_URL/" >/dev/null; then
+                echo "Deleting $folder (exists in historical repo)"
+                rm -rf "$folder"
+              else
+                echo "Keep $folder (not found in historical repo)"
+              fi
+            fi
+          done
+        done
+
     - name: Commit changes if any
       run: |
         git config --global user.email "BOT@github.com"
