@@ -48,7 +48,7 @@ jobs:
           git config --global user.email "BOT@github.com"
           git config --global user.name "githubBOT"
           git add .
-          git diff --cached --quiet || git commit -m "update realtime data"
+          git diff --cached --quiet || git commit -m "update realtime ZJEMC"
 
       # 6️⃣ git状态检查（可选）
       - name: Who am I (git)
