@@ -12,7 +12,9 @@ import pandas as pd
 import requests
 
 
-DATA_DIR = Path("Archive") / "PVPower"
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = next((path for path in [SCRIPT_DIR, *SCRIPT_DIR.parents] if (path / ".github").exists()), SCRIPT_DIR)
+DATA_DIR = PROJECT_DIR / "Archive" / "PVPower"
 LOCAL_TZ = ZoneInfo("Asia/Shanghai")
 
 STATIONS = [
@@ -31,7 +33,7 @@ STATIONS = [
 
 def setup_logging():
     """
-    Configure script logging for local runs and GitHub Actions.
+    Configure console logging for local debugging.
     """
     logging.basicConfig(
         level=logging.INFO,
@@ -42,18 +44,18 @@ def setup_logging():
 
 def extract_day_chart_df(raw_df, source="response.content"):
     """
-    Extract metadata and table cells from the Excel-like DataFrame.
+    Extract metadata and table rows from the Excel-like response DataFrame.
     """
     def after_colon(value):
         """
-        Return text after the first colon when present.
+        Return the text after the first colon if a colon exists.
         """
         value = str(value).strip()
         return value.split(":", 1)[1].strip() if ":" in value else value
 
     def first_number(value):
         """
-        Extract the first numeric value from a text field containing units.
+        Extract the first number from text that may include a unit.
         """
         match = re.search(r"-?\d+(?:\.\d+)?", str(value))
         return float(match.group(0)) if match else None
@@ -82,15 +84,17 @@ def extract_day_chart_df(raw_df, source="response.content"):
 
 def extract_day_chart_content(content):
     """
-    Read the binary Excel response in memory and extract metadata/table data.
+    Read the binary Excel response directly from memory.
     """
+    if content.lstrip().startswith(b"{"):
+        raise ValueError(f"Expected Excel bytes, got JSON response: {content[:500].decode('utf-8', errors='replace')}")
     raw_df = pd.read_excel(BytesIO(content), index_col=None, header=None, engine="xlrd", dtype=str).fillna("")
     return extract_day_chart_df(raw_df)
 
 
 def normalize_station_day_table(table, cur_date, site_name):
     """
-    Convert one station table from PV(W) to MW and normalize it to 96 daily 15-minute points.
+    Convert one station table from PV(W) to MW and normalize it to 96 points.
     """
     day_index = pd.date_range(f"{cur_date} 00:00", periods=96, freq="15min")
     station_df = table.copy()
@@ -109,7 +113,7 @@ def normalize_station_day_table(table, cur_date, site_name):
 
 def merge_station_day_tables(station_tables, cur_date):
     """
-    Merge station series into a datetime-indexed day table.
+    Merge station series into a datetime-indexed daily power table.
     """
     day_index = pd.date_range(f"{cur_date} 00:00", periods=96, freq="15min")
     merged_df = pd.concat(station_tables, axis=1).reindex(day_index)
@@ -120,7 +124,7 @@ def merge_station_day_tables(station_tables, cur_date):
 
 def build_date_list(start_date=None, end_date=None):
     """
-    Build the target date list from optional start/end date arguments.
+    Build target dates from no date, one date, or a closed date range.
     """
     if not start_date:
         return [pd.Timestamp.now(tz=LOCAL_TZ).strftime("%Y-%m-%d")]
@@ -136,15 +140,40 @@ def build_date_list(start_date=None, end_date=None):
 
 def capture_add_chart_request(username, password, headless=True):
     """
-    Log into GinlongCloud with Playwright and capture one addChart request template.
+    Log into GinlongCloud and capture a usable addChart request template.
     """
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
     from playwright.sync_api import sync_playwright
+
+    def is_export_add_chart_request(request):
+        """
+        Return True only for the addChart request that exports Excel content.
+        """
+        if "addChart" not in request.url or not request.post_data:
+            return False
+        try:
+            payload = json.loads(request.post_data)
+        except json.JSONDecodeError:
+            return False
+        return bool(payload.get("base64Info")) and "stationId" in payload
+
+    def latest_export_add_chart_request(requests_seen):
+        """
+        Return the latest captured export addChart request.
+        """
+        for request in reversed(requests_seen):
+            if is_export_add_chart_request(request):
+                return request
+        return None
 
     web_url = "https://v3.ginlongcloud.com#/station/stationDetails/generalSituation/1299184320438401096"
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=headless)
         context = browser.new_context(locale="zh-CN", timezone_id="Asia/Shanghai")
         page = context.new_page()
+
+        add_chart_requests = []
+        page.on("request", lambda request: add_chart_requests.append(request) if "addChart" in request.url else None)
         page.goto(web_url, wait_until="domcontentloaded", timeout=60000)
 
         page.locator(".login").wait_for(timeout=30000)
@@ -164,18 +193,31 @@ def capture_add_chart_request(username, password, headless=True):
         page.locator("div.login-btn button.el-button--primary").click(force=True)
 
         page.locator("div.date-select").wait_for(timeout=60000)
-        export_button = page.locator("div.date-select div.station-export button").nth(1)
-        export_button.scroll_into_view_if_needed()
+        page.wait_for_timeout(2000)
+        request = latest_export_add_chart_request(add_chart_requests)
+        if request is None:
+            export_buttons = page.locator("div.date-select div.station-export button")
+            export_button = export_buttons.nth(1)
+            export_button.scroll_into_view_if_needed()
+            try:
+                with page.expect_request(is_export_add_chart_request, timeout=60000) as request_info:
+                    export_button.evaluate("element => element.click()")
+                request = request_info.value
+            except PlaywrightTimeoutError:
+                request = latest_export_add_chart_request(add_chart_requests)
+                if request is None:
+                    raise
 
-        with page.expect_request(lambda req: "addChart" in req.url, timeout=60000) as request_info:
-            export_button.click(force=True)
-        request = request_info.value
-
+        logging.info("captured addChart request: %s", request.url)
         headers = {
             key: value
             for key, value in request.headers.items()
             if key.lower() not in {"accept-encoding", "connection", "content-length", "host"}
         }
+        cookies = context.cookies()
+        cookie_header = "; ".join(f"{cookie['name']}={cookie['value']}" for cookie in cookies)
+        if cookie_header:
+            headers["cookie"] = cookie_header
         payload = json.loads(request.post_data or "{}")
         result = {"method": request.method, "url": request.url, "headers": headers, "json": payload}
         context.close()
@@ -185,7 +227,7 @@ def capture_add_chart_request(username, password, headless=True):
 
 def download_day(request_template, cur_date):
     """
-    Download both station tables for one date and return the merged 96-point DataFrame.
+    Download both station tables for one date and return the merged DataFrame.
     """
     station_tables = []
     for station in STATIONS:
@@ -234,20 +276,20 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Download Hangzhou PV power data from GinlongCloud.")
     parser.add_argument("start_date", nargs="?", help="start date, YYYY-MM-DD; omitted means today")
     parser.add_argument("end_date", nargs="?", help="end date, YYYY-MM-DD; inclusive")
-    parser.add_argument("--headed", action="store_true", help="run browser in headed mode for local debugging")
+    parser.add_argument("--headed", action="store_true", help="run browser in headed mode for visible local debugging")
     return parser.parse_args()
 
 
 def main():
     """
-    Read credentials from environment variables, capture request template, and download target dates.
+    Read credentials, capture the request template, and download target dates.
     """
     setup_logging()
     args = parse_args()
     username = os.getenv("GLC_USR") or os.getenv("glc_usr")
     password = os.getenv("GLC_PWD") or os.getenv("glc_pwd")
     if not username or not password:
-        raise EnvironmentError("Please set GLC_USR/GLC_PWD secrets or glc_usr/glc_pwd environment variables.")
+        raise EnvironmentError("Please set GLC_USR/GLC_PWD or glc_usr/glc_pwd environment variables.")
 
     date_list = build_date_list(args.start_date, args.end_date)
     logging.info("dates: %s", ", ".join(date_list))
