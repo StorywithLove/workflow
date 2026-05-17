@@ -61,11 +61,11 @@ jobs:
         shell: bash
         run: |
           if [[ -n "$START_DATE" && -n "$END_DATE" ]]; then
-            python api_PVPower_HZ.py "$START_DATE" "$END_DATE"
+            python src/Energy/api_PVPower_HZ.py "$START_DATE" "$END_DATE"
           elif [[ -n "$START_DATE" ]]; then
-            python api_PVPower_HZ.py "$START_DATE"
+            python src/Energy/api_PVPower_HZ.py "$START_DATE"
           else
-            python api_PVPower_HZ.py
+            python src/Energy/api_PVPower_HZ.py
           fi
 
       # 6. 提交变更
