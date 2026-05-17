@@ -43,8 +43,15 @@ jobs:
 
       # 4️⃣ 运行爬虫
       - name: Run crawler
+        shell: bash
         run: |
-          python src/EMC/zjemc_selenium.py
+          set -e
+          if python src/EMC/zjemc_playwright.py; then
+            echo "Playwright crawler succeeded."
+          else
+            echo "Playwright crawler failed. Run Selenium fallback crawler."
+            python src/EMC/zjemc_selenium.py
+          fi
 
       # 5️⃣ 提交变更
       - name: Commit changes if any
