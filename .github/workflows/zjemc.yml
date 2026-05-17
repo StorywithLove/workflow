@@ -29,6 +29,7 @@ jobs:
           path: |
             ~/.cache/pip
             ~/.cache/ms-playwright
+            ~/.wdm
           key: ${{ runner.os }}-playwright-pip-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-playwright-pip-
