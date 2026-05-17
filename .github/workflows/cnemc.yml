@@ -51,7 +51,10 @@ jobs:
         # 计算阈值日期（12 个月前最后一天）
         THRESHOLD_DATE=$(date -d "$(date +%Y-%m-01) -12 months" +%Y-%m-01)
         echo "Threshold date: $THRESHOLD_DATE (folders before this may be deleted if exist in hist repo)"
-        
+
+        # =========================
+        # 1. 清理 CNEMC / ZJEMC 日期文件夹
+        # =========================
         for SRC in CNEMC ZJEMC; do
           echo "--- Processing $SRC ---"
           SRC_DIR="Archive/$SRC"
@@ -74,7 +77,41 @@ jobs:
             fi
           done
         done
-
+        
+        # =========================
+        # 2. 清理 PVPower 单文件
+        # =========================
+        echo "--- Processing file archive: PVPower ---"
+    
+        PV_DIR="Archive/PVPower"
+    
+        if [ -d "$PV_DIR" ]; then
+          for file in "$PV_DIR"/HZ_*.csv; do
+            [ -f "$file" ] || continue
+    
+            FILE_NAME=$(basename "$file")
+    
+            # 匹配 HZ_YYYY-MM-DD.csv
+            if [[ "$FILE_NAME" =~ ^HZ_([0-9]{4}-[0-9]{2}-[0-9]{2})\.csv$ ]]; then
+              DATE_FILE="${BASH_REMATCH[1]}"
+    
+              if [[ "$DATE_FILE" < "$THRESHOLD_DATE" ]]; then
+                HIST_FILE_URL="$HIST_REPO/PVPower/$FILE_NAME"
+    
+                if curl --head --silent --fail "$HIST_FILE_URL" >/dev/null; then
+                  echo "Deleting $file (found in historical repo: $FILE_NAME)"
+                  rm -f "$file"
+                else
+                  echo "Keep $file (not found in historical repo: $FILE_NAME)"
+                fi
+              fi
+            else
+              echo "Skip unmatched PVPower file: $FILE_NAME"
+            fi
+          done
+        else
+          echo "PVPower directory not found: $PV_DIR"
+        fi
     - name: Commit changes if any
       run: |
         git config --global user.email "BOT@github.com"
