@@ -138,9 +138,9 @@ def build_date_list(start_date=None, end_date=None):
     return pd.date_range(start=start_ts, end=end_ts, freq="D").strftime("%Y-%m-%d").tolist()
 
 
-def capture_add_chart_request(username, password, headless=True):
+def capture_add_chart_request(glc_host, username, password, headless=True):
     """
-    Log into GinlongCloud and capture a usable addChart request template.
+    Log into GLC and capture a usable addChart request template.
     """
     from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
     from playwright.sync_api import sync_playwright
@@ -166,7 +166,7 @@ def capture_add_chart_request(username, password, headless=True):
                 return request
         return None
 
-    web_url = "https://v3.ginlongcloud.com#/station/stationDetails/generalSituation/1299184320438401096"
+    web_url = f"{glc_host}/station/stationDetails/generalSituation/1299184320438401096"
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=headless)
         context = browser.new_context(locale="zh-CN", timezone_id="Asia/Shanghai")
@@ -273,7 +273,7 @@ def parse_args():
     """
     Parse date range and browser mode arguments.
     """
-    parser = argparse.ArgumentParser(description="Download Hangzhou PV power data from GinlongCloud.")
+    parser = argparse.ArgumentParser(description="Download Hangzhou PV power data from GLC.")
     parser.add_argument("start_date", nargs="?", help="start date, YYYY-MM-DD; omitted means today")
     parser.add_argument("end_date", nargs="?", help="end date, YYYY-MM-DD; inclusive")
     parser.add_argument("--headed", action="store_true", help="run browser in headed mode for visible local debugging")
@@ -288,12 +288,13 @@ def main():
     args = parse_args()
     username = os.getenv("GLC_USR") or os.getenv("glc_usr")
     password = os.getenv("GLC_PWD") or os.getenv("glc_pwd")
+    glc_web_url = os.getenv("GLC_WEB_URL") or os.getenv("glc_web_url")
     if not username or not password:
         raise EnvironmentError("Please set GLC_USR/GLC_PWD or glc_usr/glc_pwd environment variables.")
 
     date_list = build_date_list(args.start_date, args.end_date)
     logging.info("dates: %s", ", ".join(date_list))
-    request_template = capture_add_chart_request(username, password, headless=not args.headed)
+    request_template = capture_add_chart_request(glc_web_url, username, password, headless=not args.headed)
     for cur_date in date_list:
         save_day_power(request_template, cur_date)
 
