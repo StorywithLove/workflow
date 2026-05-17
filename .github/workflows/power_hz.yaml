@@ -11,8 +11,8 @@ on:
         description: "End date, YYYY-MM-DD. Leave empty to run only start_date/today."
         required: false
         type: string
-  schedule:
-    - cron: "10 23 * * *"
+  # schedule:
+  #   - cron: "10 23 * * *"
 
 permissions:
   contents: write
