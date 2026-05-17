@@ -13,8 +13,11 @@ import requests
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_DIR = next((path for path in [SCRIPT_DIR, *SCRIPT_DIR.parents] if (path / ".github").exists()), SCRIPT_DIR)
-DATA_DIR = PROJECT_DIR / "Archive" / "PVPower"
+PROJECT_DIR = Path(os.getenv("GITHUB_WORKSPACE", "")).resolve() if os.getenv("GITHUB_WORKSPACE") else next(
+    (path for path in [SCRIPT_DIR, *SCRIPT_DIR.parents] if (path / ".git").exists() or (path / ".github").exists()),
+    SCRIPT_DIR
+)
+PVPower_DIR = PROJECT_DIR / "Archive" / "PVPower"
 LOCAL_TZ = ZoneInfo("Asia/Shanghai")
 
 STATIONS = [
@@ -261,6 +264,8 @@ def save_day_power(request_template, cur_date):
     """
     Download, merge, and save the Hangzhou PV power table for one date.
     """
+    month_str = cur_date[:7]
+    DATA_DIR = PVPower_DIR / month_str
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     merged_df = download_day(request_template, cur_date)
     save_path = DATA_DIR / f"HZ_{cur_date}.csv"
